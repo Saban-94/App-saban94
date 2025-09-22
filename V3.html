@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>אזור אישי - ח.סבן</title>
+    <meta name="theme-color" content="#ffffff"/>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/2SbDgD1B/1.png">
+    <link rel="icon" href="https://i.postimg.cc/2SbDgD1B/1.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand: #0b72b9; --accent: #ff9f1c; --bg: #f4f7fa; --card: #ffffff;
+            --text-dark: #1a202c; --text-light: #4a5568; --text-muted: #718096;
+            --border: #e2e8f0; --success: #38a169; --warning: #dd6b20; --danger: #e53e3e;
+            --radius-lg: 16px; --radius-md: 12px; --shadow: 0 10px 15px -3px rgba(0,0,0,0.07), 0 4px 6px -2px rgba(0,0,0,0.05);
+            --transition-speed: 0.3s;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { 0% { transform: scale(0.95); opacity: 0; } to { opacity: 1; transform: scale(1); opacity: 1; } }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; overflow: hidden; background-color: var(--bg); }
+        body { font-family: 'Assistant', sans-serif; color: var(--text-dark); display: flex; flex-direction: column; }
+
+        .app-shell { display: flex; flex-direction: column; height: 100%; opacity: 0; transition: opacity 0.5s; }
+        .app-shell.visible { opacity: 1; }
+        .app-header { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; background-color: var(--card); border-bottom: 1px solid var(--border); }
+        .app-container { flex-grow: 1; overflow: hidden; position: relative; }
+        
+        .page { position: absolute; inset: 0; overflow-y: auto; padding: 20px 15px; background-color: var(--bg); visibility: hidden; opacity: 0; transform: translateX(30px); transition: all 0.4s ease-out; }
+        .page.active { visibility: visible; opacity: 1; transform: translateX(0); z-index: 5; }
+        .page.exit { transform: translateX(-30px); opacity: 0; }
+
+        .fab { position: fixed; bottom: 30px; left: 30px; width: 60px; height: 60px; background-color: var(--accent); color: white; border-radius: 50%; border: none; font-size: 32px; box-shadow: var(--shadow); z-index: 1001; cursor: pointer; display: flex; align-items: center; justify-content: center; animation: popIn 0.5s 1s ease-out backwards; }
+        
+        /* Login & Splash */
+        #splash-screen, #login-screen { position: fixed; inset: 0; z-index: 9999; background-color: #ffffff; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s ease; }
+        #login-screen { text-align: center; padding: 20px; }
+        #login-screen input { width: 100%; max-width: 300px; padding: 14px; margin: 15px 0; border: 2px solid var(--border); border-radius: var(--radius-md); font-size: 16px; text-align: center; }
+        .loader { width: 40px; height: 40px; border: 4px solid rgba(11, 114, 185, 0.2); border-top-color: var(--brand); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* General UI */
+        .card { background-color: var(--card); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow); margin-bottom: 20px; animation: fadeIn 0.5s ease-out; }
+        .btn { background: var(--brand); color: white; border: none; padding: 14px 20px; border-radius: var(--radius-md); cursor: pointer; font-weight: 700; font-size: 16px; transition: all 0.2s; }
+        .btn:disabled { background-color: var(--text-muted); cursor: not-allowed; }
+        .btn.secondary { background: var(--bg); color: var(--text-dark); border: 2px solid var(--border); }
+        .page-title { font-size: 2.2rem; font-weight: 800; margin-bottom: 20px; }
+        
+        /* Order Wizard */
+        .wizard-step { display: none; }
+        .wizard-step.active { display: block; animation: fadeIn 0.5s; }
+        .progress-bar-container { width: 100%; height: 8px; background-color: var(--border); border-radius: 4px; margin: 20px 0; overflow: hidden; }
+        .progress-bar { height: 100%; background-color: var(--brand); border-radius: 4px; transition: width var(--transition-speed) ease; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: 700; margin-bottom: 8px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border-radius: var(--radius-md); border: 2px solid var(--border); font-size: 16px; }
+        .wizard-nav { display: flex; justify-content: space-between; margin-top: 20px; }
+        .order-type-selection { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .order-type-box { padding: 30px; border: 2px solid var(--border); border-radius: var(--radius-lg); text-align: center; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .order-type-box.selected { border-color: var(--brand); background-color: #e3f2fd; }
+        .order-type-box .icon { font-size: 4rem; }
+
+        /* Sending Animation */
+        #sending-status-container { text-align: center; padding: 40px 20px; }
+    </style>
+</head>
+<body>
+    
+    <div id="splash-screen"><div class="loader"></div></div>
+
+    <div id="login-screen" style="display: none;">
+        <img src="https://i.postimg.cc/2SbDgD1B/1.png" alt="לוגו" style="width: 100px; height: 100px; border-radius: 50%; margin-bottom: 20px;">
+        <h2>ברוכים הבאים לאזור האישי</h2>
+        <p>הזן את מספר הטלפון שלך כדי להתחבר או להירשם</p>
+        <div id="phone-input-container">
+            <input type="tel" id="phone-number" placeholder="050-123-4567">
+            <button id="send-code-btn" class="btn">שלח קוד אימות</button>
+        </div>
+        <div id="otp-input-container" style="display: none;">
+            <p>הזן את הקוד שנשלח אליך ב-SMS</p>
+            <input type="number" id="otp-code" placeholder="------">
+            <button id="verify-code-btn" class="btn">אמת והתחבר</button>
+        </div>
+        <div id="recaptcha-container"></div>
+    </div>
+
+    <div id="app-shell" class="app-shell">
+        <header class="app-header">
+            <div><h1 id="client-name-header" style="font-weight: 700;"></h1></div>
+            <div id="current-project-display"></div>
+        </header>
+
+        <main class="app-container">
+            <div id="page-home" class="page">
+                <h1 class="page-title" id="greeting"></h1>
+                <div id="active-orders-container"></div>
+            </div>
+
+            <div id="page-new-order" class="page">
+                <h1 class="page-title">הזמנה חדשה</h1>
+                <div id="wizard-container"></div>
+            </div>
+        </main>
+        
+        <button id="fab-new-order" class="fab" style="display: none;">+</button>
+    </div>
+
+    <script type="module">
+        // Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            // apiKey: "...",
+            // authDomain: "...",
+            // projectId: "...",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // ... (The entire JavaScript logic for the client app will go here)
+        // This includes state management, DOM caching, authentication flow,
+        // page navigation, wizard logic, data fetching from Firestore,
+        // and order submission.
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const dom = {
+                splash: document.getElementById('splash-screen'),
+                login: document.getElementById('login-screen'),
+                appShell: document.getElementById('app-shell'),
+                phoneNumber: document.getElementById('phone-number'),
+                sendCodeBtn: document.getElementById('send-code-btn'),
+                otpCode: document.getElementById('otp-code'),
+                verifyCodeBtn: document.getElementById('verify-code-btn'),
+                phoneContainer: document.getElementById('phone-input-container'),
+                otpContainer: document.getElementById('otp-input-container'),
+                recaptchaContainer: document.getElementById('recaptcha-container'),
+                greeting: document.getElementById('greeting'),
+                clientNameHeader: document.getElementById('client-name-header'),
+                activeOrdersContainer: document.getElementById('active-orders-container'),
+                fab: document.getElementById('fab-new-order'),
+                wizardContainer: document.getElementById('wizard-container'),
+                pages: document.querySelectorAll('.page'),
+            };
+
+            let state = {
+                user: null,
+                clientData: null,
+                confirmationResult: null,
+                currentWizardStep: 0,
+                orderData: {},
+            };
+            
+            // Main auth state listener
+            auth.onAuthStateChanged(user => {
+                dom.splash.style.display = 'none';
+                if (user) {
+                    state.user = user;
+                    dom.login.style.display = 'none';
+                    dom.appShell.classList.add('visible');
+                    dom.fab.style.display = 'flex';
+                    initializeAppUI();
+                } else {
+                    dom.login.style.display = 'flex';
+                    dom.appShell.classList.remove('visible');
+                    dom.fab.style.display = 'none';
+                    setupRecaptcha();
+                }
+            });
+
+            function setupRecaptcha() {
+                if (!window.recaptchaVerifier) {
+                    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                        'size': 'invisible',
+                        'callback': (response) => { /* reCAPTCHA solved, allow signInWithPhoneNumber. */ }
+                    });
+                }
+            }
+            
+            dom.sendCodeBtn.addEventListener('click', async () => {
+                const phoneNumber = dom.phoneNumber.value;
+                const appVerifier = window.recaptchaVerifier;
+                try {
+                    state.confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+                    dom.phoneContainer.style.display = 'none';
+                    dom.otpContainer.style.display = 'block';
+                    alert('קוד אימות נשלח!');
+                } catch (error) {
+                    console.error("Error sending SMS:", error);
+                    alert('שגיאה בשליחת קוד, אנא בדוק את המספר ונסה שוב.');
+                    appVerifier.render().then(widgetId => recaptchaVerifier.reset(widgetId));
+                }
+            });
+
+            dom.verifyCodeBtn.addEventListener('click', async () => {
+                const code = dom.otpCode.value;
+                try {
+                    await state.confirmationResult.confirm(code);
+                    // User is signed in. onAuthStateChanged will handle the UI change.
+                } catch (error) {
+                    console.error("Error verifying code:", error);
+                    alert('קוד שגוי, נסה שוב.');
+                }
+            });
+
+            async function initializeAppUI() {
+                const clientRef = doc(db, "clients", state.user.uid);
+                const clientSnap = await getDoc(clientRef);
+
+                if (clientSnap.exists()) {
+                    state.clientData = clientSnap.data();
+                } else {
+                    // This is a new user
+                    const name = prompt("נראה שזהו ביקורך הראשון! מה שמך?");
+                    const newClientData = { name: name, phone: state.user.phoneNumber, createdAt: serverTimestamp() };
+                    await setDoc(clientRef, newClientData);
+                    state.clientData = newClientData;
+                }
+                renderHeader();
+                navigateTo('page-home');
+            }
+            
+            function renderHeader() {
+                const name = state.clientData.name;
+                dom.clientNameHeader.textContent = name;
+                const hour = new Date().getHours();
+                const greetingText = hour < 12 ? "בוקר טוב" : hour < 18 ? "צהריים טובים" : "ערב טוב";
+                dom.greeting.textContent = `${greetingText}, ${name.split(' ')[0]}`;
+            }
+
+            function navigateTo(pageId) {
+                 dom.pages.forEach(p => p.classList.remove('active', 'exit'));
+                 const newPage = document.getElementById(pageId);
+                 if(newPage) newPage.classList.add('active');
+            }
+
+            dom.fab.addEventListener('click', () => {
+                navigateTo('page-new-order');
+                startNewOrderWizard();
+            });
+
+            function startNewOrderWizard() {
+                state.currentWizardStep = 1;
+                state.orderData = {};
+                renderWizardStep();
+            }
+
+            function renderWizardStep() {
+                let html = '';
+                switch (state.currentWizardStep) {
+                    case 1: html = getStep1HTML(); break;
+                    // ... other cases
+                }
+                dom.wizardContainer.innerHTML = html;
+            }
+
+            function getStep1HTML() {
+                return `
+                    <div class="wizard-step active">
+                         <div class="progress-bar-container"><div class="progress-bar" style="width: 25%;"></div></div>
+                         <h3>שלב 1: מה נרצה להזמין?</h3>
+                         <div class="order-type-selection">
+                            <div class="order-type-box" data-type="container"><span class="icon">🛻</span><p>מכולה</p></div>
+                            <div class="order-type-box" data-type="materials"><span class="icon">🧱</span><p>חומרי בניין</p></div>
+                         </div>
+                    </div>`;
+            }
+            
+            // Event delegation for wizard clicks
+            dom.wizardContainer.addEventListener('click', e => {
+                const typeBox = e.target.closest('.order-type-box');
+                if (typeBox) {
+                    state.orderData.type = typeBox.dataset.type;
+                    state.currentWizardStep++;
+                    renderWizardStep();
+                }
+            });
+
+        });
+    </script>
+</body>
+</html>
